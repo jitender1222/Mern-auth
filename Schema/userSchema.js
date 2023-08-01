@@ -15,6 +15,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       require: [true, "password is required"],
     },
+    avatar: {
+      public_id: {
+        type: String,
+        required: true,
+      },
+      url: {
+        type: String,
+        required: true,
+      },
+    },
   },
   { timestamps: true }
 );

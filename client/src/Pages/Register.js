@@ -7,30 +7,38 @@ const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [file, setFile] = useState(null); // New state to store the selected file
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let data = await axios.post("/api/v1/user/register", {
-        name: name,
-        email: email,
-        password: password,
+      // Create a FormData object to send the data as a multipart/form-data request
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("email", email);
+      formData.append("password", password);
+      formData.append("file", file); // Append the selected file to the form data
+
+      let data = await axios.post("/api/v1/user/register", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data", // Set the content type to multipart/form-data for file upload
+        },
       });
+
       console.log(data);
 
-      if (data) {
+      if (data.data.success) {
         alert("User registered successfully");
-        navigate("/login");
-      }
-      if (data.success === false) {
-        alert("User is already registered Please Login to continue");
-        navigate("/login");
+        navigate("/profile");
+      } else {
+        alert(data.data.message);
       }
     } catch (error) {
       console.log(error);
     }
   };
+
   return (
     <form onSubmit={handleSubmit}>
       <Box
@@ -67,6 +75,13 @@ const Register = () => {
           required
           type="password"
           onChange={(e) => setPassword(e.target.value)}
+        />
+        <br />
+        {/* Add input for file upload */}
+        <input
+          type="file"
+          name="file"
+          onChange={(e) => setFile(e.target.files[0])}
         />
         <br />
         <Button variant="contained" color="primary" type="submit">

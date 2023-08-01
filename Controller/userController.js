@@ -1,8 +1,10 @@
 // importing the user schema
 const User = require("../Schema/userSchema");
+const cloudinary = require("cloudinary");
 
 // import bcryptjs
 const bcrypt = require("bcryptjs");
+const getDataUri = require("../dataUri");
 
 // exporting the logic
 
@@ -11,11 +13,14 @@ exports.registerUser = async (req, res) => {
   try {
     // get the name email and password from the user
 
+    const file = req.file;
+    const dataUri = getDataUri(file);
+
     const { name, email, password } = req.body;
 
     // Checking the fields
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !file) {
       res.status(401).send({
         success: false,
         message: "Please fill all the fields",
@@ -25,6 +30,8 @@ exports.registerUser = async (req, res) => {
     // the user is already existing or not
 
     const existingUser = await User.findOne({ email });
+
+    const myCloud = await cloudinary.v2.uploader.upload(dataUri.content);
 
     // if the user exists
     if (existingUser) {
@@ -38,7 +45,15 @@ exports.registerUser = async (req, res) => {
     const hashPassword = await bcrypt.hash(password, 10);
 
     // create a new user and save it into the database
-    const newUser = new User({ name, email, password: hashPassword });
+    const newUser = new User({
+      name,
+      email,
+      password: hashPassword,
+      avatar: {
+        public_id: myCloud.public_id,
+        url: myCloud.secure_url,
+      },
+    });
     await newUser.save();
 
     // return the reponse
@@ -51,7 +66,7 @@ exports.registerUser = async (req, res) => {
     console.log(error);
     res.status(401).send({
       success: false,
-      message: error,
+      message: "error",
     });
   }
 };
@@ -92,7 +107,7 @@ exports.loginUser = async (req, res) => {
     }
 
     res.status(200).send({
-      sucess: true,
+      success: true,
       message: "User login successfully",
       user,
     });
@@ -103,4 +118,15 @@ exports.loginUser = async (req, res) => {
       success: "false",
     });
   }
+};
+
+exports.profile = async (req, res) => {
+  const { name, email, url } = req.body;
+
+  return res.status(200).send({
+    success: true,
+    name,
+    email,
+    url,
+  });
 };
